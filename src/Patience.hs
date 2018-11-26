@@ -32,7 +32,7 @@ adjMove f !xi !xf m = case IM.updateLookupWithKey (\_ _ -> Nothing) xi m of
 
 -- A "card" is an integer value (with annotation) plus a "backpointer" to
 -- a card in the previous pile, if any.
-data Card a = Card !Int a (Maybe (Card a))
+data Card a = Card {-# UNPACK #-} !Int a (Maybe (Card a))
 
 -- | Given: a list of distinct integers.  Picks a subset of the integers
 --   in the same order, i.e. a subsequence, with the property that
