@@ -73,7 +73,7 @@ unique = M.mapMaybe id . F.foldr ins M.empty where
 
 -- Given two sequences of numbered "lines", returns a list of points
 -- where unique lines match up.
-solveLCS :: (Ord t) => S.Seq (Int,t) -> S.Seq (Int,t) -> [(Int,Int)]
+solveLCS :: (Ord a) => S.Seq (Int,a) -> S.Seq (Int,a) -> [(Int,Int)]
 solveLCS ma mb =
   let xs = M.elems $ M.intersectionWith (,) (unique ma) (unique mb)
   in  longestIncreasing $ sortBy (comparing snd) xs
@@ -86,7 +86,7 @@ data Piece a
   deriving (Show)
 
 -- Subdivides a diff problem according to the indices of matching lines.
-chop :: S.Seq t -> S.Seq t -> [(Int,Int)] -> [Piece t]
+chop :: S.Seq a -> S.Seq a -> [(Int,Int)] -> [Piece a]
 chop xs ys []
   | S.null xs && S.null ys = []
   | otherwise = [Diff xs ys]
@@ -104,14 +104,14 @@ zipLS xs = S.fromList . zip xs . F.toList
 #endif
 
 -- Number the elements of a Seq.
-number :: S.Seq t -> S.Seq (Int,t)
+number :: S.Seq a -> S.Seq (Int,a)
 number xs = zipLS [0..S.length xs - 1] xs
 
 -- | An element of a computed difference.
-data Item t
-  = Old  t    -- ^ Value taken from the \"old\" list, i.e. left argument to 'diff'
-  | New  t    -- ^ Value taken from the \"new\" list, i.e. right argument to 'diff'
-  | Both t t  -- ^ Value taken from both lists.  Both values are provided, in case
+data Item a
+  = Old  a    -- ^ Value taken from the \"old\" list, i.e. left argument to 'diff'
+  | New  a    -- ^ Value taken from the \"new\" list, i.e. right argument to 'diff'
+  | Both a a  -- ^ Value taken from both lists.  Both values are provided, in case
               --   your type has a non-structural definition of equality.
   deriving (Eq, Ord, Show, Read, Typeable, Data)
 
@@ -122,7 +122,7 @@ instance Functor Item where
 
 -- | The difference between two lists, according to the
 -- \"patience diff\" algorithm.
-diff :: (Ord t) => [t] -> [t] -> [Item t]
+diff :: (Ord a) => [a] -> [a] -> [Item a]
 diff xsl ysl = F.toList $ go (S.fromList xsl) (S.fromList ysl) where
   -- Handle common elements at the beginning / end.
   go (S.viewl -> (x :< xs)) (S.viewl -> (y :< ys))
@@ -143,13 +143,16 @@ diff xsl ysl = F.toList $ go (S.fromList xsl) (S.fromList ysl) where
   recur (Diff xs ys : ps) = recur ps >< go xs ys
 
 -- | The character @\'-\'@ or @\'+\'@ or @\' \'@ for 'Old' or 'New' or 'Both' respectively.
-itemChar :: Item t -> Char
+{-# DEPRECATED itemChar "Don't use this. It will be removed in a later version." #-}
+itemChar :: Item a -> Char
 itemChar (Old  _  ) = '-'
 itemChar (New  _  ) = '+'
 itemChar (Both _ _) = ' '
 
+-- should this be deprecated?
+
 -- | The value from an 'Item'.  For 'Both', returns the \"old\" value.
-itemValue :: Item t -> t
+itemValue :: Item a -> a
 itemValue (Old  x  ) = x
 itemValue (New  x  ) = x
 itemValue (Both x _) = x
