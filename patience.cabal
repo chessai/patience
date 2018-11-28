@@ -22,6 +22,7 @@ category:
   Algorithms, Text
 author:
   Keegan McAllister <mcallister.keegan@gmail.com>
+  chessai <chessai1996@gmail.com>
 maintainer:
   chessai <chessai1996@gmail.com> 
 build-type:
@@ -35,6 +36,7 @@ library
     src
   exposed-modules:
     Patience
+    Patience.Map
   ghc-options:
     -Wall
   default-language:
