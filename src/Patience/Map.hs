@@ -11,8 +11,7 @@
 --   manipulate the diffs.
 module Patience.Map
   ( -- * Types 
-    DeltaUnit(..)
-  , Delta(..)
+    Delta(..)
   , M(..)
 
     -- * Diffing 
@@ -63,13 +62,6 @@ import           Data.Map.Strict       (Map)
 import qualified Data.Map.Strict       as DMS
 import qualified Data.Map.Merge.Strict as Merge
 
--- | Encodes a diff between two 'as'.
-data DeltaUnit a = DeltaUnit
-  { old :: !a
-  , new :: !a
-  }
-  deriving (Eq, Foldable, Functor, Generic, Generic1, Ord, Show, Traversable)
-
 -- | The result of a diff of an entry within two 'Map's.
 --
 --   In two 'Map's m1 and m2, when performing a diff, this type encodes the following situations:
@@ -87,7 +79,7 @@ data DeltaUnit a = DeltaUnit
 --   (Note that this slightly differs from `Patience.diff`, which does not
 --   care about the possibility of reconstruction).
 data Delta a
-  = Delta !(DeltaUnit a)
+  = Delta !a !a
   | Same !a
   | Old  !a
   | New  !a
@@ -107,15 +99,15 @@ diff !m1 !m2 =
   Merge.merge
     (Merge.mapMissing (\_ x -> Old x)) -- preserve keys found in m1 but not m2
     (Merge.mapMissing (\_ x -> New x)) -- preserve keys found in m2 but not m1
-    (Merge.zipWithMatched (\_ v1 v2 -> if v1 == v2 then Same v1 else Delta (DeltaUnit v1 v2)))
+    (Merge.zipWithMatched (\_ v1 v2 -> if v1 == v2 then Same v1 else Delta v1 v2))
     m1
     m2
 {-# INLINABLE diff #-}
 
 -- | Is the 'Delta' an encoding of same values?
 isSame :: Eq a => Delta a -> Bool
-isSame (Same                _) = True
-isSame (Delta (DeltaUnit x y)) =
+isSame (Same    _) = True
+isSame (Delta x y) =
   if x == y
   then True
   else False
@@ -124,28 +116,28 @@ isSame                      _  = False
 
 -- | Is the 'Delta' an encoding of old values?
 isOld :: Delta a -> Bool
-isOld (Old                _ ) = True
-isOld (Delta (DeltaUnit _ _)) = True
+isOld (Old     _) = True
+isOld (Delta _ _) = True
 isOld                     _   = False
 {-# INLINE isOld #-}
 
 -- | Is the 'Delta' an encoding of new values?
 isNew :: Delta a -> Bool
-isNew (New                _ ) = True
-isNew (Delta (DeltaUnit _ _)) = True
-isNew                     _   = False
+isNew (New     _) = True
+isNew (Delta _ _) = True
+isNew           _ = False
 {-# INLINE isNew #-}
 
 -- | Is the 'Delta' an encoding of changed values?
 isDelta :: Delta a -> Bool
-isDelta (Delta _) = True
-isDelta        _  = False
+isDelta (Delta _ _) = True
+isDelta        _    = False
 {-# INLINE isDelta #-}
 
 -- | Potentially get the 'Same' value out of a 'Delta'.
 getSame :: Eq a => Delta a -> Maybe a
-getSame (Same a) = Just a
-getSame (Delta (DeltaUnit x y)) =
+getSame (Same a)    = Just a
+getSame (Delta x y) =
   if x == y
   then Just x
   else Nothing
@@ -154,41 +146,41 @@ getSame _        = Nothing
 
 -- | Potentially get the 'Old' value out of a 'Delta'.
 getOld :: Delta a -> Maybe a
-getOld (Delta (DeltaUnit a _)) = Just a
-getOld (Old a)                 = Just a
-getOld _                       = Nothing
+getOld (Delta a _) = Just a
+getOld (Old a)     = Just a
+getOld _           = Nothing
 {-# INLINE getOld #-}
 
 -- | Potentially get the 'New' value out of a 'Delta'.
 getNew :: Delta a -> Maybe a
-getNew (Delta (DeltaUnit _ a)) = Just a
-getNew (New a)                 = Just a
-getNew _                       = Nothing
+getNew (Delta _ a) = Just a
+getNew (New a)     = Just a
+getNew _           = Nothing
 {-# INLINE getNew #-}
 
--- | Potentially get the 'DeltaUnit' value out of a 'Delta'.
-getDelta :: Delta a -> Maybe (DeltaUnit a)
-getDelta (Delta d) = Just d
-getDelta _         = Nothing
+-- | Potentially get the 'Changed' value out of a 'Delta'.
+getDelta :: Delta a -> Maybe (a,a)
+getDelta (Delta d1 d2) = Just (d1,d2)
+getDelta _             = Nothing
 {-# INLINE getDelta #-}  
 
 -- | Potentially get the original value out of the 'Delta'.
 getOriginal :: M -> Delta a -> Maybe a
-getOriginal M1 (Delta (DeltaUnit x _)) = Just x
-getOriginal M2 (Delta (DeltaUnit _ y)) = Just y
-getOriginal _  (Same x)                = Just x
-getOriginal M1 (Old x)                 = Just x
-getOriginal _  (Old _)                 = Nothing
-getOriginal M2 (New x)                 = Just x
-getOriginal _  (New _)                 = Nothing
+getOriginal M1 (Delta x _) = Just x
+getOriginal M2 (Delta _ y) = Just y
+getOriginal _  (Same  x  ) = Just x
+getOriginal M1 (Old   x  ) = Just x
+getOriginal _  (Old   _  ) = Nothing
+getOriginal M2 (New   x  ) = Just x
+getOriginal _  (New   _  ) = Nothing
 {-# INLINE getOriginal #-}
 
 -- | Get the original values out of the 'Delta'.
 getOriginals :: Delta a -> (Maybe a, Maybe a)
-getOriginals (Delta (DeltaUnit x y)) = (Just x, Just y)
-getOriginals (Same x) = (Just x, Just x)
-getOriginals (Old x) = (Just x, Nothing)
-getOriginals (New x) = (Nothing, Just x)
+getOriginals (Delta x y) = (Just x, Just y)
+getOriginals (Same  x  ) = (Just x, Just x)
+getOriginals (Old   x  ) = (Just x, Nothing)
+getOriginals (New   x  ) = (Nothing, Just x)
 {-# INLINE getOriginals #-}
 
 -- | Retrieve the 'Same' values out of the diff map.
@@ -211,7 +203,7 @@ toNew = DMS.mapMaybe getNew
 
 -- | Retrieve only the 'DeltaUnit' values out of the diff map.
 toDelta :: Map k (Delta a)
-        -> Map k (DeltaUnit a)
+        -> Map k (a,a)
 toDelta = DMS.mapMaybe getDelta
 {-# INLINE toDelta #-}
 
@@ -275,7 +267,7 @@ mapOld' :: (a -> a)
 mapOld' f = DMS.map go
   where
     go (Old x) = Old (f x)
-    go (Delta (DeltaUnit x y)) = Delta (DeltaUnit (f x) y)
+    go (Delta x y) = Delta (f x) y
     go x = x
 {-# INLINE mapOld' #-}
 
@@ -287,7 +279,6 @@ mapNew' :: (a -> a)
 mapNew' f = DMS.map go
   where
     go (New x) = New (f x)
-    go (Delta (DeltaUnit x y)) = Delta (DeltaUnit x (f y))
+    go (Delta x y) = Delta x (f y)
     go x = x
 {-# INLINE mapNew' #-}
-
