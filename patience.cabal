@@ -25,6 +25,8 @@ author:
   chessai <chessai1996@gmail.com>
 maintainer:
   chessai <chessai1996@gmail.com> 
+homepage:
+  https://github.com/chessai/patience
 build-type:
   Simple
 extra-source-files:
@@ -44,3 +46,7 @@ library
   build-depends:
       base >= 4.3 && < 5
     , containers >= 0.5.9 && < 0.7
+
+source-repository head
+  type: git
+  location: https://github.com/chessai/patience.git
