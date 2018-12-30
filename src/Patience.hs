@@ -97,11 +97,7 @@ chop xs ys (!(!nx,!ny):ns) =
 
 -- Zip a list with a Seq.
 zipLS :: [a] -> S.Seq b -> S.Seq (a, b)
-#if MIN_VERSION_containers(0,3,0)
 zipLS = S.zip . S.fromList
-#else
-zipLS xs = S.fromList . zip xs . F.toList
-#endif
 
 -- Number the elements of a Seq.
 number :: S.Seq a -> S.Seq (Int,a)
