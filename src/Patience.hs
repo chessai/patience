@@ -1,6 +1,7 @@
 {-# LANGUAGE BangPatterns       #-}
 {-# LANGUAGE CPP                #-}
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveFunctor      #-}
 {-# LANGUAGE ViewPatterns       #-}
 
 -- | Implements \"patience diff\" and the patience algorithm for the longest
@@ -109,12 +110,7 @@ data Item a
   | New  a    -- ^ Value taken from the \"new\" list, i.e. right argument to 'diff'
   | Both a a  -- ^ Value taken from both lists.  Both values are provided, in case
               --   your type has a non-structural definition of equality.
-  deriving (Eq, Ord, Show, Read, Typeable, Data)
-
-instance Functor Item where
-  fmap f (Old  x  ) = Old  (f x)
-  fmap f (New  x  ) = New  (f x)
-  fmap f (Both x y) = Both (f x) (f y)
+  deriving (Eq, Ord, Show, Read, Typeable, Data, Functor)
 
 -- | The difference between two lists, according to the
 -- \"patience diff\" algorithm.
