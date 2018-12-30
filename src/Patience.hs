@@ -67,7 +67,7 @@ longestIncreasing = extract . F.foldl' ins IM.empty where
   walk (Card x a c) = (x,a) : maybe [] walk c
 
 -- Elements whose second component appears exactly once.
-unique :: (Ord t) => S.Seq (a,t) -> M.Map t a
+unique :: (Ord k) => S.Seq (a,k) -> M.Map k a
 unique = M.mapMaybe id . F.foldr ins M.empty where
   ins (a,x) = MS.insertWith (\_ _ -> Nothing) x (Just a)
 
@@ -149,9 +149,8 @@ itemChar (Old  _  ) = '-'
 itemChar (New  _  ) = '+'
 itemChar (Both _ _) = ' '
 
--- should this be deprecated?
-
 -- | The value from an 'Item'.  For 'Both', returns the \"old\" value.
+{-# DEPRECATED itemValue "Don't use this. It will be removed in a later version." #-}
 itemValue :: Item a -> a
 itemValue (Old  x  ) = x
 itemValue (New  x  ) = x
