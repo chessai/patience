@@ -1,10 +1,10 @@
-cabal-version: 2.2
+cabal-version: 2.0
 name:
   patience
 version:
   0.2.0.0
 license:
-  BSD-3-Clause
+  BSD3
 license-file:
   LICENSE
 synopsis:
