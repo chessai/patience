@@ -9,7 +9,7 @@
 module Patience
   ( -- * Patience diff
     diff
-  , Item(..), itemChar, itemValue
+  , Item(..)
     -- * Longest increasing subsequence
   , longestIncreasing
   ) where
@@ -133,17 +133,3 @@ diff xsl ysl = F.toList $ go (S.fromList xsl) (S.fromList ysl) where
   recur [] = S.empty
   recur (Match x y  : ps) = recur ps |> Both x y
   recur (Diff xs ys : ps) = recur ps >< go xs ys
-
--- | The character @\'-\'@ or @\'+\'@ or @\' \'@ for 'Old' or 'New' or 'Both' respectively.
-{-# DEPRECATED itemChar "Don't use this. It will be removed in a later version." #-}
-itemChar :: Item a -> Char
-itemChar (Old  _  ) = '-'
-itemChar (New  _  ) = '+'
-itemChar (Both _ _) = ' '
-
--- | The value from an 'Item'.  For 'Both', returns the \"old\" value.
-{-# DEPRECATED itemValue "Don't use this. It will be removed in a later version." #-}
-itemValue :: Item a -> a
-itemValue (Old  x  ) = x
-itemValue (New  x  ) = x
-itemValue (Both x _) = x
