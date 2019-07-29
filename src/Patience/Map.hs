@@ -10,11 +10,10 @@
 --   diffing between two 'Map's, and ways to
 --   manipulate the diffs.
 module Patience.Map
-  ( -- * Types 
+  ( -- * Types
     Delta(..)
-  , M(..)
 
-    -- * Diffing 
+    -- * Diffing
   , diff
 
     -- * Case analysis on 'Delta'
@@ -22,7 +21,6 @@ module Patience.Map
   , getOld
   , getNew
   , getDelta
-  , getOriginal
   , getOriginals
 
   , isSame
@@ -31,12 +29,11 @@ module Patience.Map
   , isDelta
 
     -- * Construction of special maps from a diff
-  , toSame 
+  , toSame
   , toOld
   , toNew
   , toDelta
-  , toOriginal
-  , toOriginals 
+  , toOriginals
 
     -- * Mapping
   , mapSame
@@ -55,6 +52,7 @@ import           Data.Function         ((.))
 import           Data.Functor          (Functor(fmap))
 import           Data.Maybe            (Maybe(Just,Nothing))
 import           Data.Ord              (Ord)
+import           Data.Tuple            (fst,snd)
 import           Data.Traversable      (Traversable)
 import           GHC.Generics          (Generic, Generic1)
 import           GHC.Show              (Show)
@@ -85,10 +83,6 @@ data Delta a
   | New  !a
   deriving (Eq, Foldable, Functor, Generic, Generic1, Ord, Show, Traversable)
 
--- | M1 = First 'Map', M2 = Second 'Map'.
---   Used as an argument for functions that care about which 'Map' to reconstruct.
-data M = M1 | M2
-
 -- | Takes two 'Map's and returns a 'Map' from the same key type to 'Delta' 'a',
 --   where 'Delta' 'a' encodes differences between entries.
 diff :: (Eq a, Ord k)
@@ -107,18 +101,15 @@ diff !m1 !m2 =
 -- | Is the 'Delta' an encoding of same values?
 isSame :: Eq a => Delta a -> Bool
 isSame (Same    _) = True
-isSame (Delta x y) =
-  if x == y
-  then True
-  else False
-isSame                      _  = False
+isSame (Delta x y) = x == y
+isSame          _  = False
 {-# INLINABLE isSame #-}
 
 -- | Is the 'Delta' an encoding of old values?
 isOld :: Delta a -> Bool
 isOld (Old     _) = True
 isOld (Delta _ _) = True
-isOld                     _   = False
+isOld           _ = False
 {-# INLINE isOld #-}
 
 -- | Is the 'Delta' an encoding of new values?
@@ -131,49 +122,35 @@ isNew           _ = False
 -- | Is the 'Delta' an encoding of changed values?
 isDelta :: Delta a -> Bool
 isDelta (Delta _ _) = True
-isDelta        _    = False
+isDelta           _ = False
 {-# INLINE isDelta #-}
 
 -- | Potentially get the 'Same' value out of a 'Delta'.
 getSame :: Eq a => Delta a -> Maybe a
 getSame (Same a)    = Just a
-getSame (Delta x y) =
-  if x == y
-  then Just x
-  else Nothing
-getSame _        = Nothing
+getSame (Delta x y) = if x == y then Just x else Nothing
+getSame           _ = Nothing
 {-# INLINABLE getSame #-}
 
 -- | Potentially get the 'Old' value out of a 'Delta'.
 getOld :: Delta a -> Maybe a
 getOld (Delta a _) = Just a
 getOld (Old a)     = Just a
-getOld _           = Nothing
+getOld           _ = Nothing
 {-# INLINE getOld #-}
 
 -- | Potentially get the 'New' value out of a 'Delta'.
 getNew :: Delta a -> Maybe a
 getNew (Delta _ a) = Just a
 getNew (New a)     = Just a
-getNew _           = Nothing
+getNew           _ = Nothing
 {-# INLINE getNew #-}
 
 -- | Potentially get the 'Changed' value out of a 'Delta'.
 getDelta :: Delta a -> Maybe (a,a)
 getDelta (Delta d1 d2) = Just (d1,d2)
-getDelta _             = Nothing
-{-# INLINE getDelta #-}  
-
--- | Potentially get the original value out of the 'Delta'.
-getOriginal :: M -> Delta a -> Maybe a
-getOriginal M1 (Delta x _) = Just x
-getOriginal M2 (Delta _ y) = Just y
-getOriginal _  (Same  x  ) = Just x
-getOriginal M1 (Old   x  ) = Just x
-getOriginal _  (Old   _  ) = Nothing
-getOriginal M2 (New   x  ) = Just x
-getOriginal _  (New   _  ) = Nothing
-{-# INLINE getOriginal #-}
+getDelta             _ = Nothing
+{-# INLINE getDelta #-}
 
 -- | Get the original values out of the 'Delta'.
 getOriginals :: Delta a -> (Maybe a, Maybe a)
@@ -207,17 +184,10 @@ toDelta :: Map k (Delta a)
 toDelta = DMS.mapMaybe getDelta
 {-# INLINE toDelta #-}
 
--- | Construct either the old 'Map' or new 'Map' from a diff
-toOriginal :: M
-           -> Map k (Delta a)
-           -> Map k a
-toOriginal m = DMS.mapMaybe (getOriginal m)
-{-# INLINE toOriginal #-}
-
 -- | Reconstruct both original 'Map's.
 toOriginals :: Map k (Delta a)
             -> (Map k a, Map k a)
-toOriginals m = (DMS.mapMaybe (getOriginal M1) m, DMS.mapMaybe (getOriginal M2) m)
+toOriginals m = (DMS.mapMaybe (fst . getOriginals) m, DMS.mapMaybe (snd . getOriginals) m)
 
 -- | Map over all 'Same' values, returning a map of just
 --   the transformed values.
