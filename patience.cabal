@@ -2,7 +2,7 @@ cabal-version: 2.0
 name:
   patience
 version:
-  0.2.0.0
+  0.3
 license:
   BSD3
 license-file:
@@ -24,7 +24,7 @@ author:
   Keegan McAllister <mcallister.keegan@gmail.com>
   chessai <chessai1996@gmail.com>
 maintainer:
-  chessai <chessai1996@gmail.com> 
+  chessai <chessai1996@gmail.com>
 homepage:
   https://github.com/chessai/patience
 build-type:
