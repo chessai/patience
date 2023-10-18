@@ -38,6 +38,7 @@ library
     src
   exposed-modules:
     Patience
+    Patience.Delta
     Patience.Map
   ghc-options:
     -Wall
