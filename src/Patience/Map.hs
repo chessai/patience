@@ -121,7 +121,7 @@ getNew (New a)     = Just a
 getNew           _ = Nothing
 {-# INLINE getNew #-}
 
--- | Potentially get the 'Changed' value out of a 'Delta'.
+-- | Potentially get the updated values @(old, new)@ out of a 'Delta'.
 getDelta :: Delta a -> Maybe (a,a)
 getDelta (Delta d1 d2) = Just (d1,d2)
 getDelta             _ = Nothing
@@ -153,7 +153,7 @@ toNew :: Map k (Delta a)
 toNew = DMS.mapMaybe getNew
 {-# INLINE toNew #-}
 
--- | Retrieve only the 'DeltaUnit' values out of the diff map.
+-- | Retrieve only the 'Delta' values out of the diff map.
 toDelta :: Map k (Delta a)
         -> Map k (a,a)
 toDelta = DMS.mapMaybe getDelta
