@@ -92,9 +92,15 @@ chop xs ys []
   | S.null xs && S.null ys = []
   | otherwise = [Diff xs ys]
 chop xs ys (!(!nx,!ny):ns) =
-  let (xsr, S.viewl -> (x :< xse)) = S.splitAt nx xs
-      (ysr, S.viewl -> (y :< yse)) = S.splitAt ny ys
-  in  Diff xse yse : Match x y : chop xsr ysr ns
+  let (xsr, x, xse) = case S.splitAt nx xs of
+        (xsrC, s) -> case S.viewl s of
+          EmptyL -> error "Patience.chop, xs: impossible"
+          xC :< xseC -> (xsrC, xC, xseC)
+      (ysr, y, yse) = case S.splitAt ny ys of
+        (ysrC, s) -> case S.viewl s of
+          EmptyL -> error "Patience.chop, ys: impossible"
+          yC :< yseC -> (ysrC, yC, yseC)
+  in Diff xse yse : Match x y : chop xsr ysr ns
 
 -- Zip a list with a Seq.
 zipLS :: [a] -> S.Seq b -> S.Seq (a, b)
