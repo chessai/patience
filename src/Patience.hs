@@ -112,10 +112,10 @@ number xs = zipLS [0..S.length xs - 1] xs
 
 -- | An element of a computed difference.
 data Item a
-  = Old  a    -- ^ Value taken from the \"old\" list, i.e. left argument to 'diff'
-  | New  a    -- ^ Value taken from the \"new\" list, i.e. right argument to 'diff'
-  | Both a a  -- ^ Value taken from both lists.  Both values are provided, in case
-              --   your type has a non-structural definition of equality.
+  = Old  !a     -- ^ Value taken from the \"old\" list, i.e. left argument to 'diff'
+  | New  !a     -- ^ Value taken from the \"new\" list, i.e. right argument to 'diff'
+  | Both !a !a  -- ^ Value taken from both lists.  Both values are provided, in case
+                --   your type has a non-structural definition of equality.
   deriving (Eq, Ord, Show, Read, Typeable, Data, Functor)
 
 -- | The difference between two lists, according to the
