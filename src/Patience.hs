@@ -2,6 +2,7 @@
 {-# LANGUAGE CPP                #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveFunctor      #-}
+{-# LANGUAGE LambdaCase         #-}
 {-# LANGUAGE ViewPatterns       #-}
 
 -- | Implements \"patience diff\" and the patience algorithm for the longest
@@ -12,6 +13,9 @@ module Patience
   , Item(..)
     -- * Longest increasing subsequence
   , longestIncreasing
+
+    -- * Patience.Map compat helper
+  , pairItems
   ) where
 
 import           Data.Data       (Data)
@@ -24,6 +28,8 @@ import           Data.Ord
 import           Data.Sequence   ( (<|), (|>), (><), ViewL(..), ViewR(..) )
 import qualified Data.Sequence   as S
 import           Data.Typeable   (Typeable)
+
+import qualified Patience.Delta  as D
 
 -- If key xi is in the map, move it to xf while adjusting the value with f.
 adjMove :: (a -> a) -> Int -> Int -> IM.IntMap a -> IM.IntMap a
@@ -139,3 +145,60 @@ diff xsl ysl = F.toList $ go (S.fromList xsl) (S.fromList ysl) where
   recur [] = S.empty
   recur (Match x y  : ps) = recur ps |> Both x y
   recur (Diff xs ys : ps) = recur ps >< go xs ys
+
+findAndRemove :: (a -> Bool) -> [a] -> Maybe (a, [a])
+findAndRemove p = go Nothing
+  where
+    go curr = \case
+      [] -> curr
+      (x : xs) ->
+        if p x
+        then Just (x, xs)
+        else fmap (\(a, as) -> (a, x : as)) (go curr xs)
+
+-- | Merge 'Old' and 'New' values into 'D.Delta' if they match with the pairing
+--   predicate. This can be useful if you are diffing a Map where the element
+--   types are also lists/arrays.
+--
+--   This is greedy, and it will match only the first pair it finds for each
+--   value.
+--
+--   /O(n^2)/, pretty slow. Could be improved.
+pairItems :: (a -> a -> Bool) -> [Item a] -> [D.Delta a]
+pairItems cmp xs = go xs [] []
+  where
+    go [] _seen current = current
+    go (i : is) seen current = case i of
+      -- we don't need to keep track of `Both`/`Same` values, i don't think
+      Both x _y -> go is seen (D.Same x : current)
+      o@(Old x) ->
+        let
+          matching = \case
+            New y -> cmp x y
+            _     -> False
+          matchingD = \case
+            D.New y -> cmp x y
+            _     -> False
+        in case findAndRemove matching seen of
+              Nothing -> go is (o : seen) (D.Old x : current)
+              Just (New y, seen1) -> case findAndRemove matchingD current of
+                Nothing -> error "encountered matching diff item in `seen` that wasn't in `current`"
+                Just (D.New _, current1) -> go is seen1 (D.Delta x y : current1)
+                Just _ -> error "pairItems: impossible"
+              Just _ -> error "pairItems: impossible"
+      n@(New x) ->
+        let
+          matching = \case
+            Old y -> cmp x y
+            _     -> False
+          matchingD = \case
+            D.Old y -> cmp x y
+            _     -> False
+        in case findAndRemove matching seen of
+              Nothing -> go is (n : seen) (D.New x : current)
+              Just (Old y, seen1) -> case findAndRemove matchingD current of
+                Nothing -> error "encountered matching diff item in `seen` that wasn't in `current`"
+                Just (D.Old _, current1) -> go is seen1 (D.Delta y x : current1)
+                Just _ -> error "pairItems: impossible"
+              Just _ -> error "pairItems: impossible"
+
